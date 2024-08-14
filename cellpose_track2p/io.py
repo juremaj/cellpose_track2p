@@ -9,10 +9,13 @@ def tiff_loader(tiffs_path_chN, tiff_files_chN):
     for tiff_file in tiff_files_chN:
         tiff_path = os.path.join(tiffs_path_chN, tiff_file)
         # read tiff but not just the first frame
-
+        print(f'Loading {tiff_path}')
         # Load a subset of slices
         with TiffFile(tiff_path) as tif:
             n_pages = len(tif.pages)
+            # close the file
+            tif.close()
+            
         tiff_np_subset = tf.imread(tiff_path, key=slice(0, n_pages))  # Load first 10 slices
 
         print(tiff_np_subset.shape)  # Should print (10, 512, 512)

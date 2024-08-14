@@ -48,27 +48,30 @@ def masks_to_stat(masks, session_paths, session_paths_cellpose):
         for u in np.unique(img_masks)[1:]:
             ypix, xpix = np.where(img_masks==u)
             # get the centroid
-            med = np.median(xpix), np.median(ypix)
+            med = [int(np.median(ypix)), int(np.median(xpix))]
             npix = len(xpix)
             lam = np.ones(npix, np.float32)
             radius = np.sqrt(npix/np.pi)
             stat.append({'xpix': xpix, 'ypix': ypix, 'med': med, 'npix': npix, 'lam': lam, 'radius': radius})
         
         iscell = np.ones((len(stat), 2))
-            
+        redcell = np.copy(iscell)
+        
         ops = np.load(os.path.join(session_paths[i], 'suite2p', 'plane0', 'ops.npy'), allow_pickle=True).item()
 
         stat_save_path = os.path.join(session_paths_cellpose[i], 'suite2p', 'plane0', 'stat.npy')
         iscell_save_path = os.path.join(session_paths_cellpose[i], 'suite2p', 'plane0', 'iscell.npy')
+        redcell_save_path = os.path.join(session_paths_cellpose[i], 'suite2p', 'plane0', 'redcell.npy')
         ops_save_path = os.path.join(session_paths_cellpose[i], 'suite2p', 'plane0', 'ops.npy')
 
         # TODO: load ops and make sure to save it in the same path
 
         os.makedirs(os.path.dirname(stat_save_path), exist_ok=True)
         os.makedirs(os.path.dirname(iscell_save_path), exist_ok=True)
+        os.makedirs(os.path.dirname(redcell_save_path), exist_ok=True)
         os.makedirs(os.path.dirname(ops_save_path), exist_ok=True)
-
 
         np.save(stat_save_path, stat)
         np.save(iscell_save_path, iscell)
+        np.save(redcell_save_path, redcell)
         np.save(ops_save_path, ops)
