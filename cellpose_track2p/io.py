@@ -49,3 +49,74 @@ def get_session_s2p_paths(subject_id, take_first_nsessions=None):
             all_s2p_path.append(s2p_path)
 
     return session_paths, all_s2p_path
+
+def load_all_ds_stat_iscell(all_ds_path, nplanes=1, iscell_thr=0):
+    all_ds_stat_iscell = []
+    for (i, ds_path) in enumerate(all_ds_path):
+        ds_stat_iscell = []
+        for j in range(nplanes):
+            stat = np.load(os.path.join(ds_path, 'suite2p', f'plane{j}', 'stat.npy'), allow_pickle=True)
+            iscell = np.load(os.path.join(ds_path, 'suite2p', f'plane{j}', 'iscell.npy'), allow_pickle=True)
+            if iscell_thr==None:
+                stat_iscell = stat[iscell[:,0]==1]
+            else: 
+                stat_iscell = stat[iscell[:,1]>iscell_thr]
+            ds_stat_iscell.append(stat_iscell)
+        all_ds_stat_iscell.append(ds_stat_iscell)
+
+    return all_ds_stat_iscell
+
+# functions from move_deve
+
+def get_s2p_t2p_alldays(t2p_save_path, t2p_all_ds_path, t2p_iscell_thr, manually_cur=False, plane='plane0'):
+    
+    # t2p: getting cell match matrix and track_ops
+    t2p_match_mat = np.load(os.path.join(t2p_save_path, f'{plane}_match_mat.npy'), allow_pickle=True)
+
+    print('Datasets used for t2p:')
+    for ds_path in t2p_all_ds_path:
+        print(ds_path)
+
+    # t2p: getting matches across all days
+    t2p_match_mat_allday = t2p_match_mat[~np.any(t2p_match_mat==None, axis=1), :]
+    print(f'\nNumber of cells matched across all days: {t2p_match_mat_allday.shape[0]}\nNumber of days: {t2p_match_mat_allday.shape[1]}')
+
+    # s2p: loading stat, f and ops for all days indexed and reordered by matches on all days
+    iscell_thr = t2p_iscell_thr # use the same threshold as when running the algo (to be consistent with indexing)
+
+    all_stat_t2p = []
+    all_f_t2p = []
+    all_f_neu_t2p = []
+    all_spks_t2p = []   
+    all_ops = [] # ops dont change
+
+    for (i, ds_path) in enumerate(t2p_all_ds_path):
+        ops = np.load(os.path.join(ds_path, 'suite2p', plane, 'ops.npy'), allow_pickle=True).item()
+        stat = np.load(os.path.join(ds_path, 'suite2p', plane, 'stat.npy'), allow_pickle=True)
+        f = np.load(os.path.join(ds_path, 'suite2p', plane, 'F.npy'), allow_pickle=True)
+        fneu = np.load(os.path.join(ds_path, 'suite2p', plane, 'Fneu.npy'), allow_pickle=True)
+        spks = np.load(os.path.join(ds_path, 'suite2p', plane, 'spks.npy'), allow_pickle=True)
+        iscell = np.load(os.path.join(ds_path, 'suite2p', plane, 'iscell.npy'), allow_pickle=True)
+        
+        if manually_cur:
+            iscell_bool = iscell[:,0].astype(bool)
+        else:
+            iscell_bool = iscell[:,1]>iscell_thr
+
+        stat_iscell = stat[iscell_bool]
+        f_iscell = f[iscell_bool, :]
+        f_neu_iscell = fneu[iscell_bool, :]
+        spks_iscell = spks[iscell_bool, :]
+        
+        stat_t2p = stat_iscell[t2p_match_mat_allday[:,i].astype(int)]
+        f_t2p = f_iscell[t2p_match_mat_allday[:,i].astype(int), :]  
+        f_neu_t2p = f_neu_iscell[t2p_match_mat_allday[:,i].astype(int), :]
+        spks_t2p = spks_iscell[t2p_match_mat_allday[:,i].astype(int), :]
+
+        all_stat_t2p.append(stat_t2p)
+        all_f_t2p.append(f_t2p)
+        all_f_neu_t2p.append(f_neu_t2p)
+        all_spks_t2p.append(spks_t2p)
+        all_ops.append(ops)
+
+    return all_stat_t2p, all_f_t2p, all_f_neu_t2p, all_spks_t2p, all_ops
