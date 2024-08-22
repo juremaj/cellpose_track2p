@@ -94,3 +94,22 @@ def roi_to_img_2ch(roi_ch1, roi_ch2, rgb_ch1=0, rgb_ch2=1):
     roi_image[roi_image[:, :, 3] == 0, 3] = 0
 
     return roi_image
+
+def make_rg_img(r_img, g_img, sat_r=1, sat_g=1):
+    # make an rgb image from two images
+    # r_img, g_img: np.array
+    # sat_r, sat_g: float, saturation of the red and green channels
+    # return: np.array
+    # saturate based on percentile
+    r_img = np.clip(r_img, 0, np.percentile(r_img, sat_r*100))
+    g_img = np.clip(g_img, 0, np.percentile(g_img, sat_g*100))    
+    # first normalize the images
+    r_img = (r_img - np.min(r_img)) / (np.max(r_img) - np.min(r_img))
+    g_img = (g_img - np.min(g_img)) / (np.max(g_img) - np.min(g_img))
+
+
+
+    img = np.zeros((r_img.shape[0], r_img.shape[1], 3))
+    img[:, :, 0] = r_img
+    img[:, :, 1] = g_img
+    return img

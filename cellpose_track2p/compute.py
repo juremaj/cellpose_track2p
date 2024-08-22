@@ -75,3 +75,8 @@ def masks_to_stat(masks, session_paths, session_paths_cellpose):
         np.save(iscell_save_path, iscell)
         np.save(redcell_save_path, redcell)
         np.save(ops_save_path, ops)
+
+def get_cent_from_binroi(binroi):
+    # return the centroid of a binary roi
+    y, x = np.where(binroi)
+    return np.mean(x), np.mean(y)
